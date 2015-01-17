@@ -44,17 +44,46 @@ list-is-functor {l} = record { fmap        = list-fmap ;
                                preserve-id = list-preserve-id ;
                                covariant   = list-covariant {l}}
 
---open module FunctorWithImplicits {l ll : Level} {F : Set l -> Set ll} {{functorT : Functor F}} = Functor functorT
+
+data Identity {l : Level} (A : Set l) : Set (suc l) where
+  identity : A -> Identity A
+
+identity-fmap : {l ll : Level} {A : Set l} {B : Set ll} -> (A -> B) -> Identity A -> Identity B
+identity-fmap f (identity a) = identity (f a)
+
+identity-preserve-id : {l : Level} {A : Set l} -> (x : Identity A) -> identity-fmap id x ≡ id x
+identity-preserve-id (identity x) = refl 
+
+identity-covariant : {l ll lll : Level} {A : Set l} {B : Set ll} {C : Set lll} ->
+                 (f : A -> B) → (g : B -> C) → (x : Identity A) → identity-fmap (g ∙ f) x ≡ identity-fmap g (identity-fmap f x)
+identity-covariant f g (identity x) = refl
+
+identity-is-functor : {l : Level} -> Functor Identity
+identity-is-functor {l} = record { fmap        = identity-fmap {l};
+                                   preserve-id = identity-preserve-id ;
+                                   covariant   = identity-covariant }
 
 
---hoge : ∀{F A} {{Functor F}} -> (Fa : F A) -> Functor.fmap id Fa ≡ id Fa
---hoge = {!!}
 
 
-{-
-record NaturalTransformation {l ll : Level} (F G : Set l -> Set ll) : Set (suc (l ⊔ ll)) where
+record NaturalTransformation {l ll : Level} (F G : Set l -> Set (suc l))
+                                            (functorF : Functor F)
+                                            (functorG : Functor G) : Set (suc (l ⊔ ll)) where
   field
-    natural : {A : Set l}  -> F A -> G A
+    natural-transformation : {A : Set l}  -> F A -> G A
   field
-    lemma : ∀{f } {x : Functor F} -> natural (fmap f x) ≡ f (natural x)
--}
+    commute : ∀ {A B} -> (function : A -> B) -> (x : F A) ->
+              natural-transformation (Functor.fmap functorF function x) ≡  Functor.fmap functorG function (natural-transformation x)
+
+tail : {l : Level} {A : Set l} -> List A -> List A
+tail nil         = nil
+tail (cons _ xs) = xs
+
+tail-commute : {l ll : Level} {A : Set l} {B : Set ll} -> (f : A -> B) -> (xs : List A) -> 
+               tail (list-fmap f xs) ≡ list-fmap f (tail xs)
+tail-commute f nil = refl
+tail-commute f (cons x xs) = refl 
+
+tail-is-natural-transformation : {l ll : Level} -> NaturalTransformation  {l} {ll} List List list-is-functor list-is-functor
+tail-is-natural-transformation = record { natural-transformation = tail;
+                                          commute                = tail-commute} 
