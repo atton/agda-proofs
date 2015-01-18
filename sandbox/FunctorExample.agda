@@ -13,7 +13,7 @@ f ∙ g = \x -> f (g x)
 
 
 
-record Functor {l : Level} (F : Set l -> Set (suc l)) : (Set (suc l)) where
+record Functor {l : Level} (F : Set l -> Set l) : (Set (suc l)) where
   field
     fmap : ∀{A B} -> (A -> B) -> (F A) -> (F B)
   field
@@ -21,7 +21,7 @@ record Functor {l : Level} (F : Set l -> Set (suc l)) : (Set (suc l)) where
     covariant : ∀{A B C} (f : A → B) → (g : B → C) → (x : F A)
       → fmap (g ∙ f) x ≡ fmap g (fmap f x)
 
-data List {l : Level} (A : Set l) : (Set (suc l)) where
+data List {l : Level} (A : Set l) : (Set l) where
   nil  : List A
   cons : A -> List A -> List A
 
@@ -39,16 +39,16 @@ list-covariant f g nil         = refl
 list-covariant f g (cons x xs) = cong (\li -> cons (g (f x)) li) (list-covariant f g xs)
 
 
-list-is-functor : {l : Level} -> Functor List
-list-is-functor {l} = record { fmap        = list-fmap ;
-                               preserve-id = list-preserve-id ;
-                               covariant   = list-covariant {l}}
+list-is-functor : {l : Level} -> Functor (List {l})
+list-is-functor = record { fmap        = list-fmap ;
+                           preserve-id = list-preserve-id ;
+                           covariant   = list-covariant}
 
-fmap-to-nest-list : {l ll : Level} {A : Set l} {B : Set l} {fl : {l' : Level} -> Functor {l'} List}
+fmap-to-nest-list : {l ll : Level} {A : Set l} {B : Set l} {fl : Functor List}
                     -> (A -> B) -> (List (List A)) -> (List (List B))
 fmap-to-nest-list {_} {_} {_} {_} {fl} f xs = Functor.fmap fl (Functor.fmap fl f)  xs
 
-data Identity {l : Level} (A : Set l) : Set (suc l) where
+data Identity {l : Level} (A : Set l) : Set l where
   identity : A -> Identity A
 
 identity-fmap : {l ll : Level} {A : Set l} {B : Set ll} -> (A -> B) -> Identity A -> Identity B
@@ -61,7 +61,7 @@ identity-covariant : {l ll lll : Level} {A : Set l} {B : Set ll} {C : Set lll} -
                  (f : A -> B) → (g : B -> C) → (x : Identity A) → identity-fmap (g ∙ f) x ≡ identity-fmap g (identity-fmap f x)
 identity-covariant f g (identity x) = refl
 
-identity-is-functor : {l : Level} -> Functor Identity
+identity-is-functor : {l : Level} -> Functor (Identity {l})
 identity-is-functor {l} = record { fmap        = identity-fmap {l};
                                    preserve-id = identity-preserve-id ;
                                    covariant   = identity-covariant }
@@ -69,7 +69,7 @@ identity-is-functor {l} = record { fmap        = identity-fmap {l};
 
 
 
-record NaturalTransformation {l ll : Level} (F G : Set l -> Set (suc l))
+record NaturalTransformation {l ll : Level} (F G : Set l -> Set l)
                                             (functorF : Functor F)
                                             (functorG : Functor G) : Set (suc (l ⊔ ll)) where
   field
