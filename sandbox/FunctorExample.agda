@@ -44,6 +44,9 @@ list-is-functor {l} = record { fmap        = list-fmap ;
                                preserve-id = list-preserve-id ;
                                covariant   = list-covariant {l}}
 
+fmap-to-nest-list : {l ll : Level} {A : Set l} {B : Set l} {fl : {l' : Level} -> Functor {l'} List}
+                    -> (A -> B) -> (List (List A)) -> (List (List B))
+fmap-to-nest-list {_} {_} {_} {_} {fl} f xs = Functor.fmap fl (Functor.fmap fl f)  xs
 
 data Identity {l : Level} (A : Set l) : Set (suc l) where
   identity : A -> Identity A
