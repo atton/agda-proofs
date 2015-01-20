@@ -128,3 +128,23 @@ concat-commute f (cons x xs) = begin
 concat-is-natural-transformation : {l : Level} -> NaturalTransformation (\A -> List (List A)) List
                                    {list-fmap ∙ list-fmap} {list-fmap {l}} concat
 concat-is-natural-transformation = record {commute = concat-commute}
+
+
+data NonEmptyList {l : Level} (A : Set l)  : Set l where
+  val : A -> NonEmptyList A
+  con : A -> NonEmptyList A -> NonEmptyList A
+
+head : {l : Level} {A : Set l} -> NonEmptyList A -> A
+head (val x)   = x
+head (con x _) = x 
+
+nel-fmap : {l : Level} {A B : Set l} -> (A -> B) -> NonEmptyList A -> NonEmptyList B
+nel-fmap f (val x)   = val (f x)
+nel-fmap f (con x l) = con (f x) (nel-fmap f l)
+
+head-commute : {l : Level} {A B : Set l} -> (f : A -> B) (x : NonEmptyList A) -> head (nel-fmap f x) ≡ id f (head x)
+head-commute f (val x) = refl
+head-commute f (con x v) = refl
+
+head-is-nt : {l : Level} {A : Set l} -> NaturalTransformation {l} NonEmptyList id {nel-fmap} {id} head
+head-is-nt = record { commute = head-commute }
