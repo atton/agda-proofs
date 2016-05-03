@@ -15,28 +15,23 @@ instance Monad (State s) where
 
 module state where
 
-record Product {l ll : Level} (A : Set l) (B : Set ll) : Set (suc (l ⊔ ll)) where 
+record Product {l : Level} (A B : Set l) : Set (suc l) where 
   constructor <_,_>
   field
     first  : A
     second : B
 open Product
 
-product-create : {l ll : Level} {A : Set l} {B : Set ll} -> A -> B -> Product A B
-product-create a b = < a , b >
-
-
-record State {l ll : Level} (S : Set l) (A : Set ll) : Set (suc (l ⊔ ll)) where
+record State {l : Level} (S A : Set l) : Set (suc l) where
   field
     runState : S -> Product A S
 open State
 
-state : {l ll : Level} {S : Set l} {A : Set ll} -> (S -> Product A S) -> State S A
+state : {l : Level} {S A : Set l} -> (S -> Product A S) -> State S A
 state f = record {runState = f}
 
-return : {l ll : Level} {S : Set l} {A : Set ll} -> A -> State S A
+return : {l : Level} {S A : Set l}  -> A -> State S A
 return a = state (\s -> < a , s > )
 
-
-_>>=_ : {l ll lll : Level} {S : Set l} {A : Set ll} {B : Set lll} -> State S A -> (A -> State S B) -> State S B
-m >>= k = {!!}
+_>>=_ : {l : Level} {S A B : Set l} -> State S A -> (A -> State S B) -> State S B
+m  >>= k =  state (\s -> (State.runState (k (Product.first (State.runState m s))) (Product.second (State.runState m s))))
