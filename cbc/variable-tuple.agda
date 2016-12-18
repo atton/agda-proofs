@@ -66,3 +66,7 @@ ids {A} (cs i o) = DataSegment {A} i
 ids-double : {A : Set} {a : A} -> ids {A} csDouble
 ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
+
+executeCS : (cs : CodeSegment) -> Set
+executeCS c = ids {ods c} c
+
