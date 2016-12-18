@@ -4,6 +4,7 @@ open import Data.Nat hiding (_<_ ; _>_)
 open import Data.String
 open import Data.List
 open import Data.Unit
+open import Data.Product
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality
 
@@ -48,14 +49,20 @@ DataSegment {A} (FSet x f) = x -> (DataSegment {A} f)
 data CodeSegment : Set₁ where
   cs : Format -> Format -> CodeSegment
 
-ods : CodeSegment -> List Set
-ods (cs ids FEnd)         = []
-ods (cs ids (FSet s f))   = s ∷ (ods (cs ids f))
+csDouble : CodeSegment
+csDouble = cs double double
+
+ods : CodeSegment -> Set
+ods (cs ids FEnd)         = ⊤
+ods (cs ids (FSet s f))   = s × (ods (cs ids f))
+
+ods-double : ods csDouble
+ods-double = "hoge" , zero , tt
+
 
 ids : {A : Set} -> CodeSegment ->  Set
 ids {A} (cs i o) = DataSegment {A} i
 
-
-ids-double : {A : Set} {a : A} -> ids {A} (cs double double)
+ids-double : {A : Set} {a : A} -> ids {A} csDouble
 ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
