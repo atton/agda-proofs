@@ -41,27 +41,38 @@ triple : Format
 triple = < String || ℕ  || (List ℕ) >
 
 
-DataSegment : {A : Set} -> Format -> Set
-DataSegment {A} FEnd       = A
-DataSegment {A} (FSet x f) = x -> (DataSegment {A} f)
+record CodeSegment : Set₁ where
+  field
+    IDS : Format
+    ODS : Format
 
+cs : Format -> Format -> CodeSegment
+cs i o = record { IDS = i ; ODS = o }
 
-data CodeSegment : Set₁ where
-  cs : Format -> Format -> CodeSegment
 
 csDouble : CodeSegment
 csDouble = cs double double
 
+
 ods : CodeSegment -> Set
-ods (cs ids FEnd)         = ⊤
-ods (cs ids (FSet s f))   = s × (ods (cs ids f))
+ods record { ODS = i } = ods' i
+  where
+    ods' : Format -> Set
+    ods' FEnd         = ⊤
+    ods' (FSet s o) = s × (ods' o)
 
 ods-double : ods csDouble
 ods-double = "hoge" , zero , tt
 
 
-ids : {A : Set} -> CodeSegment ->  Set
-ids {A} (cs i o) = DataSegment {A} i
+
+ids : {A : Set} ->  CodeSegment -> Set
+ids {A} record {IDS = IDS} = ids' IDS
+  where
+    ids' : Format -> Set
+    ids' FEnd       = A
+    ids' (FSet x f) = x -> (ids' f)
+
 
 ids-double : {A : Set} {a : A} -> ids {A} csDouble
 ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
@@ -69,4 +80,14 @@ ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
 executeCS : (cs : CodeSegment) -> Set
 executeCS c = ids {ods c} c
+
+
+_◎_ : {c1ods c2ids : Format} -> {equiv : c1ods ≡ c2ids} -> CodeSegment -> CodeSegment -> CodeSegment
+record {IDS = i} ◎ (record {ODS = o}) = cs i o
+
+
+compose-cs : CodeSegment
+compose-cs = _◎_ {double} {double} {refl} csDouble csDouble
+
+
 
