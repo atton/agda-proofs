@@ -7,6 +7,7 @@ open import Data.Unit
 open import Data.Product
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality
+open import Level hiding (zero)
 
 data Format : Set₁ where
   FEnd : Format
@@ -40,54 +41,48 @@ double = < String || ℕ  >
 triple : Format
 triple = < String || ℕ  || (List ℕ) >
 
+data CodeSegment (A B : Set₁) : Set₁ where
+--  cs : A -> B -> (A -> B) -> CodeSegment A B
+  cs : A -> B  -> CodeSegment A B
 
-record CodeSegment : Set₁ where
-  field
-    IDS : Format
-    ODS : Format
+id : {l : Level} {A : Set l} -> A -> A
+id a = a
 
-cs : Format -> Format -> CodeSegment
-cs i o = record { IDS = i ; ODS = o }
+CommonCodeSegment : Set₁
+CommonCodeSegment = CodeSegment Format Format
 
-
-csDouble : CodeSegment
+csDouble : CommonCodeSegment
 csDouble = cs double double
 
 
-ods : CodeSegment -> Set
-ods record { ODS = i } = ods' i
-  where
-    ods' : Format -> Set
-    ods' FEnd         = ⊤
-    ods' (FSet s o) = s × (ods' o)
+ods : CommonCodeSegment -> Set
+ods (cs i FEnd)       = ⊤
+ods (cs i (FSet s o)) = s × (ods (cs i o))
+
 
 ods-double : ods csDouble
 ods-double = "hoge" , zero , tt
 
 
-
-ids : {A : Set} ->  CodeSegment -> Set
-ids {A} record {IDS = IDS} = ids' IDS
-  where
-    ids' : Format -> Set
-    ids' FEnd       = A
-    ids' (FSet x f) = x -> (ids' f)
+ids : {A : Set} -> CommonCodeSegment -> Set
+ids {A} (cs FEnd o)       = A
+ids {A} (cs (FSet s i) o) = s -> (ids {A} (cs i o))
 
 
 ids-double : {A : Set} {a : A} -> ids {A} csDouble
 ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
 
-executeCS : (cs : CodeSegment) -> Set
+
+executeCS : (cs : CommonCodeSegment) -> Set
 executeCS c = ids {ods c} c
 
 
-_◎_ : {c1ods c2ids : Format} -> {equiv : c1ods ≡ c2ids} -> CodeSegment -> CodeSegment -> CodeSegment
-record {IDS = i} ◎ (record {ODS = o}) = cs i o
+infixr 30  _◎_
+_◎_ : {A B C : Set₁} -> CodeSegment A B -> CodeSegment B C -> CodeSegment A C
+(cs i _) ◎ (cs _ o) = cs i o
 
 
-compose-cs : CodeSegment
-compose-cs = _◎_ {double} {double} {refl} csDouble csDouble
-
-
-
+◎-double : CommonCodeSegment 
+◎-double = csDouble ◎ (cs (< String || ℕ >) <>) ◎ (cs <> triple)
+-- ◎-double = csDouble ◎ (cs (< String || ℕ >) <>) ◎ (cs double triple) -- ...
