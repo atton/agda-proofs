@@ -2,6 +2,7 @@ module stack-product where
 
 open import product
 open import Data.Product
+open import Function using (id)
 open import Relation.Binary.PropositionalEquality
 
 -- definition based from Gears(209:5708390a9d88) src/parallel_execution
@@ -83,25 +84,24 @@ test01 = cs test01'
     test01' (record { top = Just x } ,  _)  = True
 
 
-test02 : {a : Set} -> CodeSegment (SingleLinkedStack a) Bool
+test02 : {a : Set} -> CodeSegment (SingleLinkedStack a) (SingleLinkedStack a × Maybe a)
 test02 = cs test02'
   where
-    test02' : {a  : Set} -> SingleLinkedStack a -> Bool
-    test02' stack = goto popSingleLinkedStack (stack , test01)
+    test02' : {a : Set} -> SingleLinkedStack a -> (SingleLinkedStack a × Maybe a)
+    test02' stack = goto popSingleLinkedStack (stack , (cs id))
 
 
-test03 : {a : Set} -> CodeSegment a Bool
+test03 : {a : Set} -> CodeSegment a (SingleLinkedStack a)
 test03  = cs test03'
   where
-    test03' : {a : Set} -> a -> Bool
-    test03' a = goto pushSingleLinkedStack (emptySingleLinkedStack , a , test02)
+    test03' : {a : Set} -> a -> SingleLinkedStack a
+    test03' a = goto pushSingleLinkedStack (emptySingleLinkedStack , a , (cs id))
 
 
-lemma : {A : Set} {a : A} -> goto test03 a ≡ False
+lemma : {A : Set} {a : A} -> goto (test03 ◎ test02 ◎ test01) a ≡ False
 lemma = refl
 
-id : {A : Set} -> A -> A
-id a = a
+
 
 
 {-
