@@ -2,6 +2,7 @@ module stack-product where
 
 open import product
 open import Data.Product
+open import Data.Nat
 open import Function using (id)
 open import Relation.Binary.PropositionalEquality
 
@@ -102,6 +103,12 @@ lemma : {A : Set} {a : A} -> goto (test03 ◎ test02 ◎ test01) a ≡ False
 lemma = refl
 
 
+n-push : {A : Set} {a : A} -> CodeSegment (ℕ  × SingleLinkedStack A) (ℕ × SingleLinkedStack A)
+n-push {A} {a} = cs (push {A} {a})
+  where
+    push : {A : Set} {a : A} -> (ℕ × SingleLinkedStack A) -> (ℕ × SingleLinkedStack A)
+    push {A} {a} (zero  , s) = (zero , s)
+    push {A} {a} (suc n , s) = goto pushSingleLinkedStack (s , a , {!!} {- n-push -}) -- needs subtype
 
 
 {-
