@@ -6,7 +6,7 @@ open import Data.Nat
 open import Function using (_∘_ ; id)
 open import Data.Unit
 
-data CodeSegment (I O : Set) : Set₁ where
+data CodeSegment (I O : Set) : Set where
   cs : (I -> O) -> CodeSegment I O
 
 
