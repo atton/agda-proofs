@@ -5,7 +5,7 @@ open import Data.String
 open import Data.List
 open import Data.Unit
 open import Data.Product
-open import Function using (_∘_)
+open import Function using (_∘_ ; id)
 open import Relation.Binary.PropositionalEquality
 open import Level hiding (zero)
 
@@ -41,48 +41,54 @@ double = < String || ℕ  >
 triple : Format
 triple = < String || ℕ  || (List ℕ) >
 
-data CodeSegment (A B : Set₁) : Set₁ where
---  cs : A -> B -> (A -> B) -> CodeSegment A B
-  cs : A -> B  -> CodeSegment A B
-
-id : {l : Level} {A : Set l} -> A -> A
-id a = a
-
-CommonCodeSegment : Set₁
-CommonCodeSegment = CodeSegment Format Format
-
-csDouble : CommonCodeSegment
-csDouble = cs double double
+data CodeSegment (I O : Set) : Set₁ where
+  cs : (I -> O) -> CodeSegment I O
 
 
-ods : CommonCodeSegment -> Set
-ods (cs i FEnd)       = ⊤
-ods (cs i (FSet s o)) = s × (ods (cs i o))
+twiceWithName : (String × ℕ ) -> (String × ℕ )
+twiceWithName (s , n) = s , twice n
+  where
+    twice : ℕ -> ℕ
+    twice zero        = zero
+    twice (ℕ.suc n₁) = (ℕ.suc (ℕ.suc (twice n₁)))
 
+csDouble : CodeSegment (String × ℕ) (String × ℕ)
+csDouble = cs twiceWithName
+
+
+ods : {I O : Set} -> CodeSegment I O -> Set
+ods {i} {o} c = o
 
 ods-double : ods csDouble
-ods-double = "hoge" , zero , tt
+ods-double = "hoge" , zero
 
 
-ids : {A : Set} -> CommonCodeSegment -> Set
-ids {A} (cs FEnd o)       = A
-ids {A} (cs (FSet s i) o) = s -> (ids {A} (cs i o))
+ids : {I O : Set} -> CodeSegment I O -> Set
+ids {i} {o} c = i
+
+ids-double : ids csDouble
+ids-double = "fuga" , 3
+
+--ids-double : {A : Set} {a : A} -> ids csDouble
+--ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
 
-ids-double : {A : Set} {a : A} -> ids {A} csDouble
-ids-double {_} {a}  =  \(s : String) -> \(n : ℕ) -> a
 
+executeCS : {A B : Set} ->  CodeSegment A B -> (A -> B)
+executeCS (cs b) = b
 
-
-executeCS : (cs : CommonCodeSegment) -> Set
-executeCS c = ids {ods c} c
 
 
 infixr 30  _◎_
-_◎_ : {A B C : Set₁} -> CodeSegment A B -> CodeSegment B C -> CodeSegment A C
-(cs i _) ◎ (cs _ o) = cs i o
+_◎_ : {A B C : Set} -> CodeSegment A B -> CodeSegment B C -> CodeSegment A C
+(cs b1) ◎ (cs b2) = cs (b2 ∘ b1)
 
 
-◎-double : CommonCodeSegment 
-◎-double = csDouble ◎ (cs (< String || ℕ >) <>) ◎ (cs <> triple)
--- ◎-double = csDouble ◎ (cs (< String || ℕ >) <>) ◎ (cs double triple) -- ...
+
+
+◎-double : CodeSegment (String × ℕ) (String × ℕ )
+--◎-double = csDouble ◎ csDouble ◎ csDouble  -- ok
+◎-double = csDouble ◎ (cs (\s -> tt)) ◎ (cs (\t -> ("yo" , 100))) -- ok
+--◎-double = csDouble ◎ (cs (\s -> tt)) ◎ csDouble  -- ng (valid type check)
+
+
