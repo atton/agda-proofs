@@ -3,8 +3,9 @@ module product where
 open import Data.String
 open import Data.Product
 open import Data.Nat
-open import Function using (_∘_ ; id)
 open import Data.Unit
+open import Function using (_∘_ ; id)
+open import Relation.Binary.PropositionalEquality
 
 data CodeSegment (I O : Set) : Set where
   cs : (I -> O) -> CodeSegment I O
@@ -57,3 +58,8 @@ _◎_ : {A B C : Set} -> CodeSegment A B -> CodeSegment B C -> CodeSegment A C
 --◎-double = csDouble ◎ (cs (\s -> tt)) ◎ csDouble  -- ng (valid type check)
 
 
+
+open ≡-Reasoning
+
+◎-associative : {A B C D : Set} -> (a : CodeSegment A B) (b : CodeSegment B C) (c : CodeSegment C D) -> (a ◎ b) ◎ c ≡ a ◎ (b ◎ c)
+◎-associative (cs _) (cs _) (cs _) = refl
