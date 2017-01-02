@@ -60,3 +60,16 @@ insert-length k n (cons (ks , vs) s) {nonElem} = begin
   ≡⟨ refl ⟩
   suc (suc (length s))
   ∎
+  
+insert-length-exists : (k : String) (n : ℕ )(s : MySet ℕ) {hasKey : elem k s ≡ true} {nonEmpty : s ≢ empty}
+                       -> length (insert (k , n) s) ≡ (length s)
+insert-length-exists _ _ empty  {nonEmpty = n}   = ⊥-elim (n refl)
+insert-length-exists k n (cons x s) {hasKey = h} = begin
+  length (insert (k , n) (cons x s))
+  ≡⟨ refl ⟩
+  length (insert' (elem k (cons x s)) (k , n) (cons x s))
+  ≡⟨ cong (\e -> length (insert' e (k , n) (cons x s))) h ⟩
+  length (insert' true (k , n) (cons x s))
+  ≡⟨ refl ⟩
+  length (cons x s)
+  ∎
