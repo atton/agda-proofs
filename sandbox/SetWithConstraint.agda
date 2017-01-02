@@ -13,21 +13,27 @@ data MySet (A : Set) : Set where
   empty : MySet A
   cons  : (String × A) -> MySet A -> MySet A
 
+elem : {A : Set} -> String -> MySet A -> Bool
+elem a empty              = false
+elem a (cons (k , v) s)   = elem' (a == k) a (k , v) s
+  where
+    elem' : {A : Set} -> Bool -> String -> (String × A) -> MySet A -> Bool
+    elem' false a p s  = elem a s
+    elem' true  _ _ _  = true
+
+
+insert' : {A : Set} -> Bool -> (String × A) -> MySet A -> MySet A
+insert' false p s  = cons p s
+insert' true  _ s  = s
+
 insert : {A : Set} -> (String × A) -> MySet A -> MySet A
-insert (k , v) empty        = cons (k , v) empty
-insert (k , v) (cons (sk , sv) s) with (k == sk)
-...                                  | true  = cons (sk , sv) s
-...                                  | false = cons (sk , sv) (insert (k , v) s)
+insert (k , v) empty = cons (k , v) empty
+insert (k , v) s     = insert' (elem k s) (k , v) s
+
        
 length : {A : Set} -> MySet A -> ℕ
 length empty      = 0
 length (cons _ s) = suc (length s)
-
-elem : {A : Set} -> String -> MySet A -> Bool
-elem a empty      = false
-elem a (cons (k , v) s) with a == k
-...                      | true  = true
-...                      | false = elem a s
 
 head : {A : Set} -> MySet A -> Maybe (String × A)
 head empty      = nothing
@@ -43,15 +49,14 @@ empty-insert-length s = refl
 
 open ≡-Reasoning
 
-expand-non-elem : (k : String) (s : MySet ℕ) -> (nonElem : elem k s ≡ false) -> (just k ≢ (Data.Maybe.map proj₁ (head s)))
-expand-non-elem k empty nonElem      = {!!}
-expand-non-elem k (cons x s) nonElem = {!!}
-
-
 insert-length : (k : String) (n : ℕ )(s : MySet ℕ) {nonElem : elem k s ≡ false} -> length (insert (k , n) s) ≡ suc (length s)
 insert-length k n empty              = refl
 insert-length k n (cons (ks , vs) s) {nonElem} = begin
   length (insert (k , n) (cons (ks , vs) s))
-  ≡⟨ {!!} ⟩
+  ≡⟨ refl ⟩
+  length (insert' (elem k (cons (ks , vs) s)) (k , n) (cons (ks , vs) s))
+  ≡⟨ cong (\e -> length (insert' e (k , n) (cons (ks , vs) s))) nonElem  ⟩
+  length (insert' false (k , n) (cons (ks , vs) s))
+  ≡⟨ refl ⟩
   suc (suc (length s))
   ∎
