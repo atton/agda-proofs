@@ -3,7 +3,7 @@ module named-product where
 open import Function
 open import Data.Bool
 open import Data.Nat
-open import Data.String
+open import Data.String hiding (_++_)
 open import Data.List
 open import Relation.Binary.PropositionalEquality
 
@@ -64,28 +64,19 @@ equiv = refl
 
 
 data CodeSegment (A B : Set) : (List Set) -> Set where
-  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (A ∷ (B ∷ l))
+  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B l
   
 
-exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l  -> Context -> Context
-exec {{i}} {{o}} (cs b) c = Datum.set o c (b (Datum.get i c))
+exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
+exec {l} {{i}} {{o}}  (cs b) c =   Datum.set o c (b (Datum.get i c))
 
 
-equiv-exec : {l : List Set} ->  incContextCycle firstContext ≡ exec (cs {l = l} inc) firstContext
+equiv-exec : {l : List Set} -> incContextCycle firstContext ≡ exec (cs {l = l} inc) firstContext
 equiv-exec = refl
 
-{-
+
+_◎_ : {A B C : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {l ll : List Set}
+       -> CodeSegment B C l -> CodeSegment A B ll -> CodeSegment A C (l ++ ll)
+_◎_ {{da}} {{_}} {{dc}} {l = l} {ll = ll} (cs g) (cs f) = cs  {l = l ++ ll} {{da}} {{dc}} (g ∘ f)
 
 
-InputIsHead : {n : ℕ} {I O : Set} {l : Vec Set (suc (suc n))} -> (cs : CodeSegment I O l) -> I ≡ head l
-InputIsHead (cs _) = refl
-
-OutputIsLast : {n : ℕ} {I O : Set} {l : Vec Set (suc (suc n))} -> (cs : CodeSegment I O l) -> O ≡ last l
-OutputIsLast {_} {_} {_} {l} (cs x) = {!!}
-
--}
-  
-
-
---yoyo : DataSegment
---yoyo = record { name = "yoyo" ; ds = [ Yo ]}
