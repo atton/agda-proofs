@@ -4,12 +4,10 @@ open import Function
 open import Data.Bool
 open import Data.Nat
 open import Data.String
-open import Data.Vec
+open import Data.List
 open import Relation.Binary.PropositionalEquality
 
 
-data DataSegment {n : ℕ } : (Vec Set n) -> Set where
-  ds : (l : Vec Set n) -> DataSegment l
 
 
 record Context : Set where
@@ -65,16 +63,17 @@ equiv = refl
 
 
 
-data CodeSegment {n : ℕ} {l : Vec Set n} (A B : Set) : (DataSegment (A ∷ (B ∷ l))) -> Set where
-  cs : {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (ds (A ∷ (B ∷ l)))
+data CodeSegment (A B : Set) : (List Set) -> Set where
+  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (A ∷ (B ∷ l))
   
 
-exec : {n : ℕ } {I O : Set} -> {l : Vec Set (suc (suc n))} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O (ds (I ∷ O ∷ l)) -> Context -> Context
+exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l  -> Context -> Context
 exec {{i}} {{o}} (cs b) c = Datum.set o c (b (Datum.get i c))
 
 
-equiv-exec : {n : ℕ } {l : Vec Set n} ->  incContextCycle firstContext ≡ exec (cs inc) firstContext
+equiv-exec : {l : List Set} ->  incContextCycle firstContext ≡ exec (cs {l = l} inc) firstContext
 equiv-exec = refl
+
 {-
 
 
