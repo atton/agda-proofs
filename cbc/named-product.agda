@@ -4,19 +4,13 @@ open import Function
 open import Data.Bool
 open import Data.Nat
 open import Data.String
-open import Data.List
+open import Data.Vec
 open import Relation.Binary.PropositionalEquality
 
-{-
-record DataSegment (n : ℕ) : Set₁ where
-  field
-    name : String
-    ds   : Vec (Set -> Set) (suc n)
 
-ids : {A : Set} {n : ℕ} -> DataSegment n -> Set
-ids {a} {zero}  record { name = name ; ds = (x ∷ []) } = x a
-ids {a} {suc n} record { name = name ; ds = (x ∷ ds) } = x a -> ids {a} {n} record { name = name ; ds = ds }
--}
+data DataSegment {n : ℕ } : (Vec Set n) -> Set where
+  ds : (l : Vec Set n) -> DataSegment l
+
 
 record Context : Set where
   field
@@ -28,8 +22,6 @@ record Datum (A : Set) : Set where
   field 
     get : Context -> A
     set : Context -> A -> Context
-
-
 
 
 record LoopCounter : Set where
@@ -71,20 +63,28 @@ incContextCycle {{l}} c = Datum.set l c (inc (Datum.get l c))
 equiv : incContextCycle firstContext ≡ record { cycle = 4 ; led = "q" ; signature = "aaa" }
 equiv = refl
 
-data CodeSegment (A B : Set) : (List Set) -> Set₁ where
-  cs : {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (A ∷ B ∷ [])
 
-exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
+
+data CodeSegment {n : ℕ} {l : Vec Set n} (A B : Set) : (DataSegment (A ∷ (B ∷ l))) -> Set where
+  cs : {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (ds (A ∷ (B ∷ l)))
+  
+
+exec : {n : ℕ } {I O : Set} -> {l : Vec Set (suc (suc n))} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O (ds (I ∷ O ∷ l)) -> Context -> Context
 exec {{i}} {{o}} (cs b) c = Datum.set o c (b (Datum.get i c))
 
-equiv-exec : incContextCycle firstContext ≡ exec (cs inc) firstContext
+
+equiv-exec : {n : ℕ } {l : Vec Set n} ->  incContextCycle firstContext ≡ exec (cs inc) firstContext
 equiv-exec = refl
+{-
 
 
---InputIsHead : {I : Set} (l : List Set) -> (cs : CodeSegment I _ l) -> I ≡ head l
---InputIsHead = ?
+InputIsHead : {n : ℕ} {I O : Set} {l : Vec Set (suc (suc n))} -> (cs : CodeSegment I O l) -> I ≡ head l
+InputIsHead (cs _) = refl
 
+OutputIsLast : {n : ℕ} {I O : Set} {l : Vec Set (suc (suc n))} -> (cs : CodeSegment I O l) -> O ≡ last l
+OutputIsLast {_} {_} {_} {l} (cs x) = {!!}
 
+-}
   
 
 
