@@ -64,7 +64,9 @@ equiv = refl
 
 
 data CodeSegment (A B : Set) : (List Set) -> Set where
-  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B l
+  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (A ∷ B ∷ l)
+
+
   
 
 exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
@@ -75,8 +77,8 @@ equiv-exec : {l : List Set} -> incContextCycle firstContext ≡ exec (cs {l = l}
 equiv-exec = refl
 
 
-_◎_ : {A B C : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {l ll : List Set}
-       -> CodeSegment B C l -> CodeSegment A B ll -> CodeSegment A C (l ++ ll)
-_◎_ {{da}} {{_}} {{dc}} {l = l} {ll = ll} (cs g) (cs f) = cs  {l = l ++ ll} {{da}} {{dc}} (g ∘ f)
+_◎_ : {A B C : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {l ll  : List Set}
+       -> CodeSegment B C (B ∷ C ∷ l) -> CodeSegment A B (A ∷ B ∷ ll) -> CodeSegment A C (A ∷ C ∷ B ∷ (l ++ ll))
+_◎_ {A} {B} {C} {{da}} {{_}} {{dc}} {l} {ll} (cs g) (cs f) =  cs {l = (B ∷ (l ++ ll))} {{da}} {{dc}} (g ∘ f)
 
 
