@@ -66,7 +66,11 @@ equiv = refl
 data CodeSegment (A B : Set) : (List Set) -> Set where
   cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (A ∷ B ∷ l)
 
+basicCS : Set -> Set -> Set
+basicCS A B = CodeSegment A B (A ∷ B ∷ [])
 
+csInc : basicCS LoopCounter LoopCounter
+csInc = cs inc
   
 
 exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
@@ -82,3 +86,8 @@ _◎_ : {A B C : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {l ll  : L
 _◎_ {A} {B} {C} {{da}} {{_}} {{dc}} {l} {ll} (cs g) (cs f) =  cs {l = (B ∷ (l ++ ll))} {{da}} {{dc}} (g ∘ f)
 
 
+comp-sample : CodeSegment LoopCounter LoopCounter (LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ [])
+comp-sample = csInc ◎ csInc
+
+apply-sample : Context
+apply-sample = exec comp-sample firstContext
