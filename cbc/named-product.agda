@@ -3,7 +3,8 @@ module named-product where
 open import Function
 open import Data.Bool
 open import Data.Nat
-open import Data.String hiding (_++_)
+open import Data.Nat.Show
+open import Data.String hiding (_++_ ; show)
 open import Data.List
 open import Relation.Binary.PropositionalEquality
 
@@ -91,3 +92,13 @@ comp-sample = csInc ◎ csInc
 
 apply-sample : Context
 apply-sample = exec comp-sample firstContext
+
+
+updateSignature : SignatureWithNum -> SignatureWithNum
+updateSignature record { signature = signature ; num = num } = record { signature = (Data.String._++_) signature (show num ) ; num = num}
+
+csUpdateSignature : basicCS SignatureWithNum SignatureWithNum
+csUpdateSignature = cs updateSignature
+
+comp-sample-2 : CodeSegment LoopCounter SignatureWithNum ?
+comp-sample-2 = csUpdateSignature ◎ csInc
