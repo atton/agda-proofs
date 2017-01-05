@@ -64,41 +64,25 @@ equiv : incContextCycle firstContext ≡ record { cycle = 4 ; led = "q" ; signat
 equiv = refl
 
 
-
 data CodeSegment (A B : Set) : (List Set) -> Set where
   cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B (B ∷ A ∷ l)
 
 BasicCS : Set -> Set -> Set
 BasicCS A B = CodeSegment A B (A ∷ B ∷ [])
 
-up : {A B : Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> Context -> B
-up {{i}} {{o}} f c = f (Datum.get i c)
-
-
-csInc : BasicCS LoopCounter LoopCounter
-csInc = cs inc
   
 
 exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
 exec {l} {{i}} {{o}}  (cs b) c = Datum.set o c (b (get i c))
 
---upCast : {A B : Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> (Datum A -> Datum B)
---upCast {{i}} {{o}} f a = record { get = (\c -> f (Datum.get a c))
---                                ; set = (\c b -> Datum.set o c b)}
 
---downCast : {A B : Set} {{i : Datum A}} {{o : Datum B}} -> (Datum A -> Datum B) -> A -> B
---downCast {{i = record { get = get ; set = set }}} {{record { get = get₁ ; set = set₁ }}} f a = {!!}
-
-
-apply : {A B : Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> Context -> B
-apply {{i}} {{o}} f c = f (get i c)
-
-
-_∘_ : {con : Context} -> {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}}
+comp : {con : Context} -> {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}}
        -> (C -> D) -> (A -> B) -> A -> D
-_∘_ {con} {{i}} {{io}} {{oi}} {{o}} g f x = g (get oi (set io con (f x)))
+comp {con} {{i}} {{io}} {{oi}} {{o}} g f x = g (get oi (set io con (f x)))
                                          
                                            
+csInc : BasicCS LoopCounter LoopCounter
+csInc = cs inc
                                        
 
 
@@ -107,27 +91,32 @@ equiv-exec : {l : List Set} -> incContextCycle firstContext ≡ exec csInc first
 equiv-exec = refl
 
 
-_◎_ : {con : Context} {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}} {l ll : List Set}
+csComp : {con : Context} {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}} {l ll : List Set}
        -> CodeSegment C D (D ∷ C ∷ l) -> CodeSegment A B (B ∷ A ∷ ll) -> CodeSegment A D (D ∷ A ∷ C ∷ B ∷ (l ++ ll))
-_◎_ {con} {A} {B} {C} {D} {{da}} {{db}} {{dc}} {{dd}} {l} {ll} (cs g) (cs f)
-      = cs {l = (C ∷ B ∷ (l ++ ll))} {{da}} {{dd}} (_∘_ {con} {{da}} {{db}} {{dc}} {{dd}} g f)
+csComp {con} {A} {B} {C} {D} {{da}} {{db}} {{dc}} {{dd}} {l} {ll} (cs g) (cs f)
+      = cs {l = (C ∷ B ∷ (l ++ ll))} {{da}} {{dd}} (comp {con} {{da}} {{db}} {{dc}} {{dd}} g f)
 
 
-comp-sample : CodeSegment LoopCounter LoopCounter (LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ [])
-comp-sample = csInc ◎ csInc
+comp-sample : {c : Context} -> CodeSegment LoopCounter LoopCounter (LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ [])
+comp-sample {c} = (csComp {c} csInc csInc)
 
 
 apply-sample : Context
-apply-sample = exec comp-sample firstContext
+apply-sample = exec (comp-sample {firstContext}) firstContext
 
-{-
+
 
 updateSignature : SignatureWithNum -> SignatureWithNum
 updateSignature record { signature = signature ; num = num } = record { signature = (Data.String._++_) signature (show num ) ; num = num}
 
-csUpdateSignature : basicCS SignatureWithNum SignatureWithNum
+
+csUpdateSignature : BasicCS SignatureWithNum SignatureWithNum
 csUpdateSignature = cs updateSignature
 
---comp-sample-2 : CodeSegment LoopCounter SignatureWithNum ?
---comp-sample-2 = csUpdateSignature ◎ csInc
--}
+
+
+comp-sample-2 : {c : Context} -> CodeSegment LoopCounter SignatureWithNum (SignatureWithNum ∷ LoopCounter ∷ SignatureWithNum ∷ LoopCounter ∷ [])
+comp-sample-2 {c} = csComp {c} csUpdateSignature  csInc
+
+apply-sample-2 : Context
+apply-sample-2 = exec (comp-sample-2 {firstContext}) firstContext
