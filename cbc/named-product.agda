@@ -62,14 +62,14 @@ equiv : incContextCycle firstContext ≡ record { cycle = 4 ; led = "q" ; signat
 equiv = refl
 
 
-data CodeSegment (A B : Set) : (List Set) -> Set where
-  cs : {l : List Set} {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B l
+data CodeSegment (A B : Set) : Set where
+  cs : {{_ : Datum A}} {{_ : Datum B}} -> (A -> B) -> CodeSegment A B
 
 BasicCS :  Set -> Set -> Set
-BasicCS A B = CodeSegment  A B (A ∷ B ∷ [])
+BasicCS A B = CodeSegment  A B
   
 
-exec : {I O : Set} -> {l : List Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O l -> Context -> Context
+exec : {I O : Set} {{_ : Datum I}} {{_ : Datum O}} -> CodeSegment I O -> Context -> Context
 exec {l} {{i}} {{o}}  (cs b) c = Datum.set o c (b (get i c))
 
 
@@ -87,12 +87,12 @@ equiv-exec : {l : List Set} -> incContextCycle firstContext ≡ exec csInc first
 equiv-exec = refl
 
 
-csComp : {con : Context} {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}} {l ll : List Set}
-       -> CodeSegment C D l -> CodeSegment A B ll -> CodeSegment A D (l ++ ll)
-csComp {con} {A} {B} {C} {D} {{da}} {{db}} {{dc}} {{dd}} {l} {ll} (cs g) (cs f)
+csComp : {con : Context} {A B C D : Set} {{_ : Datum A}} {{_ : Datum B}} {{_ : Datum C}} {{_ : Datum D}}
+       -> CodeSegment C D -> CodeSegment A B -> CodeSegment A D
+csComp {con} {A} {B} {C} {D} {{da}} {{db}} {{dc}} {{dd}} (cs g) (cs f)
       = cs {{da}} {{dd}} (comp {con} {{da}} {{db}} {{dc}} {{dd}} g f)
 
-comp-sample : {c : Context} -> CodeSegment LoopCounter LoopCounter (LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ LoopCounter ∷ [])
+comp-sample : {c : Context} -> CodeSegment LoopCounter LoopCounter
 comp-sample {c}  = (csComp {c} csInc csInc)
 
 
@@ -110,45 +110,16 @@ csUpdateSignature = cs updateSignature
 
 
 
---comp-sample-2 : {c : Context} -> CodeSegment LoopCounter SignatureWithNum (SignatureWithNum ∷ LoopCounter ∷ SignatureWithNum ∷ LoopCounter ∷ [])
---comp-sample-2  = csComp  csUpdateSignature  csInc
+comp-sample-2 : {c : Context} -> CodeSegment LoopCounter SignatureWithNum
+comp-sample-2 {c}  = csComp {c}  csUpdateSignature  csInc
 
---apply-sample-2 : Context
---apply-sample-2 = exec (comp-sample-2 {firstContext}) firstContext
-
-
-open ≡-Reasoning
-
-++empty : {A : Set} -> (l : List A) -> l ++ [] ≡ l
-++empty [] = refl
-++empty (x ∷ l) = cong (\l -> x ∷ l) (++empty l)
+apply-sample-2 : Context
+apply-sample-2 = exec (comp-sample-2 {firstContext}) firstContext
 
 
 
-list-associative : {A : Set} -> (l ll lll : List A) -> l ++ (ll ++ lll) ≡ (l ++ ll) ++ lll
-list-associative [] ll lll       = refl
-list-associative (x ∷ l) [] []  = begin
-  (x ∷ l) ++ [] ++ [] 
-  ≡⟨ ++empty ((x ∷ l)) ⟩ 
-  x ∷ l
-  ≡⟨ sym (++empty (x ∷ l)) ⟩
-  x ∷ l ++ []
-  ≡⟨ sym (++empty ((x ∷ l) ++ [])) ⟩
-  ((x ∷ l) ++ []) ++ []
-  ∎
-list-associative (x ∷ l) [] (xxx ∷ lll) = {!!}
-list-associative (x ∷ l) (x₁ ∷ ll) [] = {!!}
-list-associative (x ∷ l) (x₁ ∷ ll) (x₂ ∷ lll) = {!!}
-
-
-
-
-
-comp-associative : {A B C D E F : Set} {l ll lll : List Set} {con : Context}
+comp-associative : {A B C D E F : Set} {con : Context}
                    {{da : Datum A}} {{db : Datum B}} {{dc : Datum C}} {{dd : Datum D}} {{de : Datum E}} {{df : Datum F}}
-                   -> {a : CodeSegment A B l} {b : CodeSegment C D ll} {c : CodeSegment E F lll} 
-                   -> csComp {con} c (csComp {con} b a)  ≡ {!!} -- csComp (csComp c b) a -- cannot define directly
-                   -- csComp c (csComp b a) has CodeSegment A F (lll ++ ll ++ l)
-                   -- csComp (csComp c b) a has CodeSegment A F ((lll ++ ll) ++ l)
-comp-associative = {!!}
-
+                   -> (a : CodeSegment A B) (b : CodeSegment C D) (c : CodeSegment E F)
+                   -> csComp {con} c (csComp {con} b a)  ≡ csComp {con} (csComp {con} c b) a
+comp-associative (cs _) (cs _) (cs _) = refl
