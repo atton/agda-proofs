@@ -15,6 +15,8 @@ record Context : Set where
     signature : String
     
 open import subtype Context
+
+
 record LoopCounter : Set where
   field
     count : ℕ
