@@ -30,8 +30,8 @@ record Context : Set where
 open import subtype Context
 
 instance
-  yo : DataSegment Context
-  yo = record {get = (\x -> x) ; set = (\_ c -> c)}
+  ContextIsDataSegment : DataSegment Context
+  ContextIsDataSegment = record {get = (\x -> x) ; set = (\_ c -> c)}
 
 
 
