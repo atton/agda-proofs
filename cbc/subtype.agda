@@ -14,7 +14,8 @@ data CodeSegment {l1 l2 : Level} (A : Set l1) (B : Set l2) : Set (l ⊔ l1 ⊔ l
   cs : {{_ : DataSegment A}} {{_ : DataSegment B}} -> (A -> B) -> CodeSegment A B
 
 
-exec : {I O : Set} {{_ : DataSegment I}} {{_ : DataSegment O}} -> CodeSegment I O -> Context -> Context
+exec : {l1 l2 : Level} {I : Set l1} {O : Set l2} {{_ : DataSegment I}} {{_ : DataSegment O}}
+     -> CodeSegment I O -> Context -> Context
 exec {l} {{i}} {{o}}  (cs b) c = set o c (b (get i c))
 
 

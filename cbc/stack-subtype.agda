@@ -123,9 +123,23 @@ setNext : {X Y : Set} {{x : N.DataSegment X}} {{y : N.DataSegment Y}}
         -> (N.CodeSegment X Y) -> M.CodeSegment (MetaContext Context) (MetaContext Context)
 setNext c = M.cs (\mc -> record mc {nextCS = liftContext c})
 
-
-
-
+setElement : A -> M.CodeSegment (MetaContext Context) (MetaContext Context)
+setElement x = M.cs (\mc -> record mc {context = record (MetaContext.context mc) {element = just x}})
 
 pushPlus3CS : {mc : MetaContext Context} -> M.CodeSegment (MetaContext Context) (MetaContext Context)
 pushPlus3CS {mc} = M.csComp {mc} pushSingleLinkedStackCS (setNext plus3CS)
+
+plus5AndPush : {mc : MetaContext Context} {{_ : N.DataSegment Num}} {{_ : M.DataSegment Num}}
+               -> M.CodeSegment Num (MetaContext Context)
+plus5AndPush {mc} {{nn}} = M.cs (\n -> record {context = con ; nextCS = (liftContext {{nn}} {{nn}} plus3CS) ; stack = st} )
+  where
+    con  = MetaContext.context mc
+    st   = MetaContext.stack mc
+
+
+push-sample : {{_ : M.DataSegment Num}} -> MetaContext Context
+push-sample = M.exec (plus5AndPush {mc}) mc
+  where
+    con  = record { n = 4 ; element = nothing}
+    code = N.cs (\c -> c)
+    mc   = record {context = con ; stack = emptySingleLinkedStack ; nextCS = code}
