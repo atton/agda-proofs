@@ -96,7 +96,7 @@ popSingleLinkedStack m = M.exec (liftMeta n) (record m {stack = (st m) ; context
     st : Meta -> SingleLinkedStack A
     st record {stack = record { top = (just (cons _ s)) }} = record {top = s}
     st record {stack = record { top = nothing           }} = record {top = nothing}
-    
+   
 
 
 
