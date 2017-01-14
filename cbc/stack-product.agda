@@ -108,7 +108,7 @@ n-push {A} {a} = cs (push {A} {a})
   where
     push : {A : Set} {a : A} -> (ℕ × SingleLinkedStack A) -> (ℕ × SingleLinkedStack A)
     push {A} {a} (zero  , s) = (zero , s)
-    push {A} {a} (suc n , s) = goto pushSingleLinkedStack (s , a , ? {- n-push -}) -- needs subtype
+    push {A} {a} (suc n , s) = goto pushSingleLinkedStack (s , a , {!!} {- n-push -}) -- needs subtype
 
 
 {-

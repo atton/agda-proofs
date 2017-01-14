@@ -23,8 +23,12 @@ open SingleLinkedStack
 
 record Context : Set where
   field
+    -- fields for stack
     element : Maybe A
+    stack   : SingleLinkedStack A
+    -- fields for data segments
     n       : ℕ
+
 
 
 open import subtype Context as N
@@ -34,24 +38,22 @@ instance
   ContextIsDataSegment = record {get = (\c -> c) ; set = (\_ c -> c)}
 
 
-record MetaContext (X : Set) {{_ : N.DataSegment X}} : Set₁ where
+record Meta  : Set₁ where
   field
     context : Context
-    stack   : SingleLinkedStack A
-    nextCS  : N.CodeSegment X X
+    nextCS  : N.CodeSegment Context Context
 
+    
 
-
-
-open import subtype (MetaContext Context) as M
+open import subtype Meta as M
 
 instance
-  MetaContextIncludeContext : M.DataSegment Context
-  MetaContextIncludeContext = record { get = MetaContext.context
-                                     ; set = (\m c -> record m {context = c}) }
+  MetaIncludeContext : M.DataSegment Context
+  MetaIncludeContext = record { get = Meta.context
+                              ; set = (\m c -> record m {context = c}) }
 
-  MetaContextIsMetaDataSegment : M.DataSegment (MetaContext Context)
-  MetaContextIsMetaDataSegment  = record { get = (\m -> m) ; set = (\_ m -> m) }
+  MetaIsMetaDataSegment : M.DataSegment Meta
+  MetaIsMetaDataSegment  = record { get = (\m -> m) ; set = (\_ m -> m) }
 
 
 liftMeta : {X Y : Set} {{_ : M.DataSegment X}} {{_ : M.DataSegment Y}} -> N.CodeSegment X Y -> M.CodeSegment X Y
@@ -66,42 +68,44 @@ emptySingleLinkedStack : SingleLinkedStack A
 emptySingleLinkedStack = record {top = nothing}
 
 
-pushSingleLinkedStack :  MetaContext Context -> MetaContext Context
-pushSingleLinkedStack m = M.exec (liftMeta n) (record m {stack = (push s e) })
+pushSingleLinkedStack : Meta -> Meta
+pushSingleLinkedStack m = M.exec (liftMeta n) (record m {context = record c {stack = (push s e)}})
   where
-    n = MetaContext.nextCS m
-    e = Context.element (MetaContext.context m)
-    s = MetaContext.stack   m
+    c = (Meta.context m)
+    n = Meta.nextCS     m
+    e = Context.element c
+    s = Context.stack   c
     push : SingleLinkedStack A -> Maybe A -> SingleLinkedStack A
     push s nothing  = s
     push s (just x) = record {top = just (cons x (top s))}
 
 
-
-popSingleLinkedStack : MetaContext Context -> MetaContext Context
-popSingleLinkedStack m = M.exec (liftMeta n) (record m {stack = (st m) ; context = record con {element = (elem m)}})
+popSingleLinkedStack : Meta -> Meta
+popSingleLinkedStack m = M.exec (liftMeta n) (record m { context = record c { stack = (st c) ; element = (elem c)}})
   where
-    n = MetaContext.nextCS m
-    con  = MetaContext.context m
-    elem : MetaContext Context -> Maybe A
+    n = Meta.nextCS m
+    c = Meta.context m
+    elem : Context -> Maybe A
     elem record {stack = record { top = (just (cons x _)) }} = just x
-    elem record {stack = record { top = nothing           }} = nothing
-    st : MetaContext Context -> SingleLinkedStack A
+    elem record {stack = record { top = nothing } }          = nothing
+    st : Context -> SingleLinkedStack A
     st record {stack = record { top = (just (cons _ s)) }} = record {top = s}
-    st record {stack = record { top = nothing           }} = record {top = nothing}
-    
-pushSingleLinkedStackCS : M.CodeSegment (MetaContext Context) (MetaContext Context)
+    st record {stack = record { top = nothing } }          = record {top = nothing}
+
+
+pushSingleLinkedStackCS : M.CodeSegment Meta Meta
 pushSingleLinkedStackCS = M.cs pushSingleLinkedStack
 
-popSingleLinkedStackCS : M.CodeSegment (MetaContext Context) (MetaContext Context)
+popSingleLinkedStackCS : M.CodeSegment Meta Meta
 popSingleLinkedStackCS = M.cs popSingleLinkedStack
 
 
 -- for sample
 
 firstContext : Context
-firstContext = record { element = nothing ; n = 0}
+firstContext = record {stack = emptySingleLinkedStack ; element = nothing ; n = 0}
 
 
-firstMetaContext : MetaContext Context
-firstMetaContext = record {stack = emptySingleLinkedStack ; nextCS = (N.cs (\m -> m)) ; context = firstContext}
+firstMeta : Meta 
+firstMeta = record {nextCS = (N.cs (\m -> m)) ; context = firstContext}
+

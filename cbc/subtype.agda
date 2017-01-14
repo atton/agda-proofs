@@ -26,7 +26,7 @@ comp : {con : Context} -> {l1 l2 l3 l4 : Level}
 comp {con} {{i}} {{io}} {{oi}} {{o}} g f x = g (get oi (set io con (f x)))
 
 csComp : {con : Context} -> {l1 l2 l3 l4 : Level}
-         {A : Set l1} {B : Set l2} {C : Set l3} {D : Set l4}
+        {A : Set l1} {B : Set l2} {C : Set l3} {D : Set l4}
          {{_ : DataSegment A}} {{_ : DataSegment B}} {{_ : DataSegment C}} {{_ : DataSegment D}}
        -> CodeSegment C D -> CodeSegment A B -> CodeSegment A D
 csComp {con} {A} {B} {C} {D} {{da}} {{db}} {{dc}} {{dd}} (cs g) (cs f)
