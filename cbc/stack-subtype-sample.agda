@@ -78,25 +78,16 @@ pushNum : N.CodeSegment Context Context
 pushNum = N.cs pn
   where
     pn : Context -> Context
-    pn record { n = n } = record { n = n  ; element = just n}
-
-n-push : {{_ : N.DataSegment Num}} -> Meta -> Meta
-n-push {{x}} record { context = record { n = zero    ; element = el } ; stack = st ; nextCS = code} =
-  M.exec pushSingleLinkedStackCS record { context = record { n = zero ; element = el }
-                                        ; stack   = st ; nextCS  = code}
-n-push {{x}} record { context = record { n = (suc n) ; element = el } ; stack = st ; nextCS = code} =
-  n-push {{x}} record {context = record {n = n ; element = e} ; stack = s ; nextCS = c}
-    where
-      pushedMeta = M.exec pushSingleLinkedStackCS record { context = record { n = (suc n) ; element = el}
-                                                         ; stack = st ; nextCS = code}
-      e = Context.element (Meta.context pushedMeta)
-      s = Meta.stack pushedMeta
-      c = Meta.nextCS pushedMeta
+    pn record { n = n } = record { n = pred n  ; element = just n}
 
 
+pushOnce : Meta -> Meta
+pushOnce m = M.exec pushSingleLinkedStackCS m
 
-n-push-cs : M.CodeSegment Meta Meta
-n-push-cs = M.cs n-push
+n-push : {m : Meta} {{_ : M.DataSegment Meta}} (n : ℕ) -> M.CodeSegment Meta Meta
+n-push {{mm}} (zero)  = M.cs {{mm}} {{mm}} pushOnce
+n-push {m} {{mm}} (suc n)        = M.csComp {m} {{mm}} {{mm}} {{mm}} {{mm}} (n-push {m} {{mm}} n) (M.cs {{mm}} {{mm}} pushOnce)
+
 
 
 initMeta : ℕ -> N.CodeSegment Context Context -> Meta
@@ -105,10 +96,13 @@ initMeta n code = record { context = record { n = n ; element = nothing}
                          ; nextCS  = code
                          }
 
-n-push-cs-exec = M.exec n-push-cs (initMeta 4 pushNum)
+n-push-cs-exec = M.exec (n-push {meta} 2) meta
+  where
+    meta = (initMeta 5 pushNum)
 
 
-n-push-cs-exec-equiv : n-push-cs-exec ≡ record { nextCS  = {!!}
-                                                ; context = {!!}
-                                                ; stack   = record { top = {!!} }}
+n-push-cs-exec-equiv : n-push-cs-exec ≡ record { nextCS  = pushNum
+                                                ; context = record {n = 2 ; element = just 3}
+                                                ; stack   = record {top = just (cons 4 (just (cons 5 nothing)))}}
 n-push-cs-exec-equiv = refl
+
