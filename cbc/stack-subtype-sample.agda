@@ -1,12 +1,13 @@
 module stack-subtype-sample where
 
+open import Function
 open import Data.Nat
 open import Data.Maybe
 open import Relation.Binary.PropositionalEquality
 
 open import stack-subtype ℕ  as S
-open import subtype Context as N
-open import subtype (Meta Context) as M
+open import subtype Context  as N
+open import subtype Meta     as M
 
 
 record Num : Set where
@@ -29,17 +30,9 @@ plus3CS : N.CodeSegment Num Num
 plus3CS = N.cs plus3
 
 
-setNext : {X Y : Set} {{x : N.DataSegment X}} {{y : N.DataSegment Y}}
-        -> (N.CodeSegment X Y) -> M.CodeSegment (Meta Context) (Meta Context)
-setNext c = M.cs (\mc -> record mc {nextCS = liftContext c})
 
-setElement : ℕ -> M.CodeSegment (Meta Context) (Meta Context)
-setElement x = M.cs (\mc -> record mc {context = record (Meta.context mc) {element = just x}})
-
-
-
-plus5AndPushWithPlus3 : {mc : Meta Context} {{_ : N.DataSegment Num}}
-               -> M.CodeSegment Num (Meta Context)
+plus5AndPushWithPlus3 : {mc : Meta} {{_ : N.DataSegment Num}}
+               -> M.CodeSegment Num (Meta)
 plus5AndPushWithPlus3 {mc} {{nn}} = M.cs (\n -> record {context = con n ; nextCS = (liftContext {{nn}} {{nn}} plus3CS) ; stack = st} )
   where
     co    = Meta.context mc
@@ -50,7 +43,7 @@ plus5AndPushWithPlus3 {mc} {{nn}} = M.cs (\n -> record {context = con n ; nextCS
 
 
 
-push-sample : {{_ : N.DataSegment Num}} {{_ : M.DataSegment Num}} ->  Meta Context
+push-sample : {{_ : N.DataSegment Num}} {{_ : M.DataSegment Num}} ->  Meta
 push-sample {{nd}} {{md}} = M.exec {{md}} (plus5AndPushWithPlus3 {mc} {{nd}}) mc
   where
     con  = record { n = 4 ; element = just 0}
@@ -64,7 +57,7 @@ push-sample-equiv : push-sample ≡ record { nextCS  = liftContext plus3CS
 push-sample-equiv = refl
 
 
-pushed-sample : {m : Meta Context} {{_ : N.DataSegment Num}} {{_ : M.DataSegment Num}} ->  Meta Context
+pushed-sample : {m : Meta} {{_ : N.DataSegment Num}} {{_ : M.DataSegment Num}} ->  Meta
 pushed-sample {m} {{nd}} {{md}} = M.exec {{md}} (M.csComp {m} {{md}} pushSingleLinkedStackCS (plus5AndPushWithPlus3 {mc} {{nd}})) mc
   where
     con  = record { n = 4 ; element = just 0}
@@ -73,7 +66,7 @@ pushed-sample {m} {{nd}} {{md}} = M.exec {{md}} (M.csComp {m} {{md}} pushSingleL
 
 
 
-pushed-sample-equiv : {m : Meta Context} ->
+pushed-sample-equiv : {m : Meta} ->
                       pushed-sample {m} ≡ record { nextCS  = liftContext plus3CS
                                                   ; stack   = record { top = just (cons 0 nothing) }
                                                   ; context = record { n   = 12} }
@@ -81,6 +74,41 @@ pushed-sample-equiv = refl
 
 
 
-n-push : {{_ : M.DataSegment (Meta Context)}} -> Meta Context -> Meta Context
-n-push m = M.csComp (pushSingleLinkedStackCS) (setElement ?)
+pushNum : N.CodeSegment Context Context
+pushNum = N.cs pn
+  where
+    pn : Context -> Context
+    pn record { n = n } = record { n = n  ; element = just n}
 
+n-push : {{_ : N.DataSegment Num}} -> Meta -> Meta
+n-push {{x}} record { context = record { n = zero    ; element = el } ; stack = st ; nextCS = code} =
+  M.exec pushSingleLinkedStackCS record { context = record { n = zero ; element = el }
+                                        ; stack   = st ; nextCS  = code}
+n-push {{x}} record { context = record { n = (suc n) ; element = el } ; stack = st ; nextCS = code} =
+  n-push {{x}} record {context = record {n = n ; element = e} ; stack = s ; nextCS = c}
+    where
+      pushedMeta = M.exec pushSingleLinkedStackCS record { context = record { n = (suc n) ; element = el}
+                                                         ; stack = st ; nextCS = code}
+      e = Context.element (Meta.context pushedMeta)
+      s = Meta.stack pushedMeta
+      c = Meta.nextCS pushedMeta
+
+
+
+n-push-cs : M.CodeSegment Meta Meta
+n-push-cs = M.cs n-push
+
+
+initMeta : ℕ -> N.CodeSegment Context Context -> Meta
+initMeta n code = record { context = record { n = n ; element = nothing}
+                         ; stack   = emptySingleLinkedStack
+                         ; nextCS  = code
+                         }
+
+n-push-cs-exec = M.exec n-push-cs (initMeta 4 pushNum)
+
+
+n-push-cs-exec-equiv : n-push-cs-exec ≡ record { nextCS  = {!!}
+                                                ; context = {!!}
+                                                ; stack   = record { top = {!!} }}
+n-push-cs-exec-equiv = refl

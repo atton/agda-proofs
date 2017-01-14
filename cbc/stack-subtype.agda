@@ -2,6 +2,7 @@ open import Level hiding (lift)
 open import Data.Maybe
 open import Data.Product
 open import Data.Nat hiding (suc)
+open import Function
 
 module stack-subtype (A : Set) where
 
@@ -23,11 +24,12 @@ open SingleLinkedStack
 
 record Context : Set where
   field
+    -- fields for concrete data segments
+    n       : ℕ 
     -- fields for stack
     element : Maybe A
-    stack   : SingleLinkedStack A
-    -- fields for data segments
-    n       : ℕ
+
+
 
 
 
@@ -40,8 +42,11 @@ instance
 
 record Meta  : Set₁ where
   field
+    -- context as set of data segments
     context : Context
+    stack   : SingleLinkedStack A  
     nextCS  : N.CodeSegment Context Context
+    
 
     
 
@@ -69,28 +74,30 @@ emptySingleLinkedStack = record {top = nothing}
 
 
 pushSingleLinkedStack : Meta -> Meta
-pushSingleLinkedStack m = M.exec (liftMeta n) (record m {context = record c {stack = (push s e)}})
+pushSingleLinkedStack m = M.exec (liftMeta n) (record m {stack = (push s e) })
   where
-    c = (Meta.context m)
-    n = Meta.nextCS     m
-    e = Context.element c
-    s = Context.stack   c
+    n = Meta.nextCS m
+    s = Meta.stack  m
+    e = Context.element (Meta.context m)
     push : SingleLinkedStack A -> Maybe A -> SingleLinkedStack A
     push s nothing  = s
     push s (just x) = record {top = just (cons x (top s))}
 
 
+
 popSingleLinkedStack : Meta -> Meta
-popSingleLinkedStack m = M.exec (liftMeta n) (record m { context = record c { stack = (st c) ; element = (elem c)}})
+popSingleLinkedStack m = M.exec (liftMeta n) (record m {stack = (st m) ; context = record con {element = (elem m)}})
   where
     n = Meta.nextCS m
-    c = Meta.context m
-    elem : Context -> Maybe A
+    con  = Meta.context m
+    elem : Meta -> Maybe A
     elem record {stack = record { top = (just (cons x _)) }} = just x
-    elem record {stack = record { top = nothing } }          = nothing
-    st : Context -> SingleLinkedStack A
+    elem record {stack = record { top = nothing           }} = nothing
+    st : Meta -> SingleLinkedStack A
     st record {stack = record { top = (just (cons _ s)) }} = record {top = s}
-    st record {stack = record { top = nothing } }          = record {top = nothing}
+    st record {stack = record { top = nothing           }} = record {top = nothing}
+    
+
 
 
 pushSingleLinkedStackCS : M.CodeSegment Meta Meta
@@ -103,9 +110,14 @@ popSingleLinkedStackCS = M.cs popSingleLinkedStack
 -- for sample
 
 firstContext : Context
-firstContext = record {stack = emptySingleLinkedStack ; element = nothing ; n = 0}
+firstContext = record {element = nothing ; n = 0}
 
 
 firstMeta : Meta 
-firstMeta = record {nextCS = (N.cs (\m -> m)) ; context = firstContext}
+firstMeta = record { context = firstContext
+                   ; stack = emptySingleLinkedStack
+                   ; nextCS = (N.cs (\m -> m))
+                   }
+
+
 
