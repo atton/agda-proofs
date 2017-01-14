@@ -88,6 +88,14 @@ n-push : {m : Meta} {{_ : M.DataSegment Meta}} (n : ℕ) -> M.CodeSegment Meta M
 n-push {{mm}} (zero)  = M.cs {{mm}} {{mm}} pushOnce
 n-push {m} {{mm}} (suc n)        = M.csComp {m} {{mm}} {{mm}} {{mm}} {{mm}} (n-push {m} {{mm}} n) (M.cs {{mm}} {{mm}} pushOnce)
 
+popOnce : Meta -> Meta
+popOnce m = M.exec popSingleLinkedStackCS m
+
+n-pop : {m : Meta} {{_ : M.DataSegment Meta}} (n : ℕ) -> M.CodeSegment Meta Meta
+n-pop {{mm}} (zero)      = M.cs {{mm}} {{mm}} popOnce
+n-pop {m} {{mm}} (suc n) = M.csComp {m} {{mm}} {{mm}} {{mm}} {{mm}} (n-pop {m} {{mm}} n) (M.cs {{mm}} {{mm}} popOnce)
+
+
 
 
 initMeta : ℕ -> N.CodeSegment Context Context -> Meta
@@ -106,3 +114,17 @@ n-push-cs-exec-equiv : n-push-cs-exec ≡ record { nextCS  = pushNum
                                                 ; stack   = record {top = just (cons 4 (just (cons 5 nothing)))}}
 n-push-cs-exec-equiv = refl
 
+
+n-pop-cs-exec = M.exec (n-pop {meta} 3) meta
+  where
+    meta = record { nextCS  = N.cs id
+                  ; context = record { n = 0 ; element = nothing}
+                  ; stack   = record {top = just (cons 9 (just (cons 8 (just (cons 7 (just (cons 6 (just (cons 5 nothing)))))))))}
+                  }
+
+n-pop-cs-exec-equiv : n-pop-cs-exec ≡ record { nextCS  = N.cs id
+                                              ; context = record { n = 0 ; element = just 6}
+                                              ; stack   = record { top = just (cons 5 nothing)}
+                                              }
+
+n-pop-cs-exec-equiv = refl
