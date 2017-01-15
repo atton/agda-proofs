@@ -231,15 +231,11 @@ pop-n-push (suc n) cn ce s = begin
   ≡⟨ cong (\x -> M.exec (M.cs popOnce) x) (exec-comp (n-push (suc n)) (M.cs pushOnce) (id-meta cn ce s)) ⟩
   M.exec (M.cs popOnce) (M.exec (n-push (suc n))(M.exec (M.cs pushOnce) (id-meta cn ce s)))
   ≡⟨ refl ⟩
-  M.exec (M.cs popOnce) (M.exec (n-push (suc n)) (record { nextCS  = (N.cs id) ;
-                                                           context = record {n = cn ; element = just ce} ;
-                                                           stack   = record {top = just (cons ce (SingleLinkedStack.top s)) }
-                                                         }))
-  ≡⟨ {!!} ⟩
-  M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) ?
-  ≡⟨ {!!} ⟩
-  M.exec (n-push n) (record { nextCS  = (N.cs id) ; context = record {n = cn ; element = just ce} ;
-                              stack   = record {top = just (cons ce (SingleLinkedStack.top s))}})
+  M.exec (M.cs popOnce) (M.exec (n-push (suc n)) (id-meta cn ce (record {top = just (cons ce (SingleLinkedStack.top s))})))
+  ≡⟨ sym (exec-comp (M.cs popOnce) (n-push (suc n)) (id-meta cn ce (record {top = just (cons ce (SingleLinkedStack.top s))}))) ⟩
+  M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) (id-meta cn ce (record {top = just (cons ce (SingleLinkedStack.top s))}))
+  ≡⟨ pop-n-push {!!} cn ce (record {top = just (cons ce (SingleLinkedStack.top s))}) ⟩
+  M.exec (n-push n) (id-meta cn ce (record {top = just (cons ce (SingleLinkedStack.top s))}))
   ≡⟨ refl ⟩
   M.exec (n-push n) (pushOnce (id-meta cn ce s))
   ≡⟨ refl ⟩
