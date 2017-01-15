@@ -87,7 +87,7 @@ pushOnce m = M.exec pushSingleLinkedStackCS m
 
 n-push : {m : Meta} {{_ : M.DataSegment Meta}} (n : ℕ) -> M.CodeSegment Meta Meta
 n-push {{mm}} (zero)      = M.cs {{mm}} {{mm}} id
-n-push {m} {{mm}} (suc n) = M.csComp {m} {{mm}} {{mm}} {{mm}} {{mm}} (n-push {m} {{mm}} n) (M.cs {{mm}} {{mm}} pushOnce)
+n-push {m} {{mm}} (suc n) = M.csComp {m} {{mm}} {{mm}} {{mm}} {{mm}} (n-push {m} {{mm}} n) (M.cs {{mm}} {{mm}} pushOnce) 
 
 popOnce : Meta -> Meta
 popOnce m = M.exec popSingleLinkedStackCS m
@@ -159,13 +159,25 @@ n-pop-pop-once-n-push (suc n) m = {!!}
 
 
 
-id-meta : Context -> Meta
-id-meta c = record { context = c ; nextCS = (N.cs id) ; stack = record {top = nothing}}
+id-meta : ℕ -> ℕ -> SingleLinkedStack ℕ -> Meta
+id-meta n e s = record { context = record {n = n ; element = just e}
+                       ; nextCS = (N.cs id) ; stack = s}
+
+exec-comp : (f g : M.CodeSegment Meta Meta) (m : Meta) -> M.exec (M.csComp {m} f g) m ≡ M.exec f (M.exec g m)
+exec-comp (M.cs x) (M.cs _) m = refl
 
 
-push-pop : (c : Context) -> M.exec (M.csComp {id-meta c} (M.cs popOnce) (M.cs pushOnce)) (id-meta c) ≡ id-meta c
-push-pop record { n = n ; element = (just x) } = refl
-push-pop record { n = n ; element = nothing }  = refl
+push-pop-type : ℕ -> ℕ  -> ℕ -> Element ℕ -> Set₁
+push-pop-type n e x s = M.exec (M.csComp {meta} (M.cs popOnce) (M.cs pushOnce)) meta ≡ meta
+  where
+    meta = id-meta n e record {top = just (cons x (just s))}
+
+push-pop : (n e x : ℕ) -> (s : Element ℕ) ->  push-pop-type n e x s
+push-pop n e x s = refl
+
+
+
+{-
 {-
 n-pop-pop-once-n-push : (n : ℕ) (c : Context) ->
     M.exec (M.csComp {id-meta c}  (M.csComp {id-meta c} (n-pop {id-meta c} n) (M.cs popOnce)) (n-push {id-meta c} (suc n))) (id-meta c)
@@ -193,50 +205,76 @@ n-pop-pop-once-n-push (suc n) c = begin
   ∎
 -}
 
-exec-comp : (f g : M.CodeSegment Meta Meta) (m : Meta) -> M.exec (M.csComp {m} f g) m ≡ M.exec f (M.exec g m)
-exec-comp (M.cs x) (M.cs _) m = refl
 
 
 
 n-push-pop :  (n : ℕ) (c : Context) ->
   (M.exec (M.csComp {id-meta c} (M.cs popOnce) (n-push {id-meta c} (suc n))) (id-meta c)) ≡ M.exec (n-push {id-meta c} n) (id-meta c)
 n-push-pop zero c    = push-pop c
-n-push-pop (suc n) record {n = num ; element = nothing} = begin
-  M.exec (M.csComp (M.cs popOnce) (n-push (suc (suc n)))) (id-meta record {n = num ; element = nothing})
+n-push-pop (suc n) c = {!!}
+-}
+
+pop-n-push-type : ℕ -> ℕ -> ℕ -> SingleLinkedStack ℕ -> Set₁
+pop-n-push-type n cn ce s = M.exec (M.csComp {meta} (M.cs popOnce) (n-push {meta} (suc n))) meta
+                         ≡ M.exec (n-push {meta} n) meta
+  where
+    meta = id-meta cn ce s
+
+pop-n-push : (n cn ce : ℕ) -> (s : SingleLinkedStack ℕ) -> pop-n-push-type n cn ce s
+pop-n-push zero cn ce s    = refl
+pop-n-push (suc n) cn ce s = begin
+  M.exec (M.csComp (M.cs popOnce) (n-push (suc (suc n)))) (id-meta cn ce s)
   ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push (suc n)) (M.cs pushOnce))) (id-meta record {n = num ; element = nothing})
-  ≡⟨ cong (\f -> M.exec f (id-meta record {n = num ; element = nothing})) (M.comp-associative (M.cs pushOnce) (n-push (suc n)) (M.cs popOnce) ) ⟩
-  M.exec (M.csComp (M.csComp (M.cs popOnce) (n-push (suc n))) (M.cs pushOnce)) (id-meta record {n = num ; element = nothing})
-  ≡⟨ exec-comp (M.csComp (M.cs popOnce) (n-push (suc n))) (M.cs pushOnce) (id-meta record {n = num ; element = nothing})  ⟩
-  M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) (M.exec (M.cs pushOnce) (id-meta record {n = num ; element = nothing}))
+  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push (suc n)) (M.cs pushOnce))) (id-meta cn ce s)
+  ≡⟨ exec-comp (M.cs popOnce) (M.csComp (n-push (suc n)) (M.cs pushOnce)) (id-meta cn ce s) ⟩
+  M.exec (M.cs popOnce) (M.exec (M.csComp (n-push (suc n)) (M.cs pushOnce)) (id-meta cn ce s))
+  ≡⟨ cong (\x -> M.exec (M.cs popOnce) x) (exec-comp (n-push (suc n)) (M.cs pushOnce) (id-meta cn ce s)) ⟩
+  M.exec (M.cs popOnce) (M.exec (n-push (suc n))(M.exec (M.cs pushOnce) (id-meta cn ce s)))
   ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push n) (M.cs pushOnce))) (M.exec (M.cs pushOnce) (id-meta record {n = num ; element = nothing}))
-  ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push n) (M.cs pushOnce))) (id-meta record {n = num ; element = nothing})
-  ≡⟨ cong (\f -> M.exec f (id-meta record {n = num ; element = nothing})) (M.comp-associative (M.cs pushOnce) (n-push n) (M.cs popOnce)) ⟩
-  M.exec (M.csComp (M.csComp (M.cs popOnce) (n-push n)) (M.cs pushOnce)) (id-meta record {n = num ; element = nothing})
-  ≡⟨ exec-comp (M.csComp (M.cs popOnce) (n-push n)) (M.cs pushOnce) (id-meta record {n = num ; element = nothing }) ⟩
-  M.exec (M.csComp (M.cs popOnce) (n-push n)) (M.exec (M.cs pushOnce) (id-meta record {n = num ; element = nothing}))
-  ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (n-push n)) (id-meta record {n = num ; element = nothing})
+  M.exec (M.cs popOnce) (M.exec (n-push (suc n)) (record { nextCS  = (N.cs id) ;
+                                                           context = record {n = cn ; element = just ce} ;
+                                                           stack   = record {top = just (cons ce (SingleLinkedStack.top s)) }
+                                                         }))
   ≡⟨ {!!} ⟩
-  M.exec (n-push (suc n)) (id-meta record {n = num ; element = nothing})
-  ∎
-n-push-pop (suc n) record {n = num ; element = just x} = begin
-  M.exec (M.csComp (M.cs popOnce) (n-push (suc (suc n)))) (id-meta record {n = num ; element = just x})
-  ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push (suc n)) (M.cs pushOnce))) (id-meta record {n = num ; element = just x})
-  ≡⟨ cong (\f -> M.exec f (id-meta record {n = num ; element = just x})) (M.comp-associative (M.cs pushOnce) (n-push (suc n)) (M.cs popOnce) ) ⟩
-  M.exec (M.csComp (M.csComp (M.cs popOnce) (n-push (suc n))) (M.cs pushOnce)) (id-meta record {n = num ; element = just x})
-  ≡⟨ exec-comp (M.csComp (M.cs popOnce) (n-push (suc n))) (M.cs pushOnce) (id-meta record {n = num ; element = just x})  ⟩
-  M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) (M.exec (M.cs pushOnce) (id-meta record {n = num ; element = just x}))
-  ≡⟨ refl ⟩
-  M.exec (M.csComp (M.cs popOnce) (M.csComp (n-push n) (M.cs pushOnce))) (M.exec (M.cs pushOnce) (id-meta record {n = num ; element = just x}))
+  M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) ?
   ≡⟨ {!!} ⟩
-  M.exec (n-push (suc n)) (id-meta record {n = num ; element = just x})
+  M.exec (n-push n) (record { nextCS  = (N.cs id) ; context = record {n = cn ; element = just ce} ;
+                              stack   = record {top = just (cons ce (SingleLinkedStack.top s))}})
+  ≡⟨ refl ⟩
+  M.exec (n-push n) (pushOnce (id-meta cn ce s))
+  ≡⟨ refl ⟩
+  M.exec (n-push n) (M.exec (M.cs pushOnce) (id-meta cn ce s))
+  ≡⟨ sym (exec-comp (n-push n) (M.cs pushOnce) (id-meta cn ce s)) ⟩
+  M.exec (M.csComp (n-push n) (M.cs pushOnce)) (id-meta cn ce s)
+  ≡⟨ refl ⟩
+  M.exec (n-push (suc n)) (id-meta cn ce s)
   ∎
 
 
+n-push-pop-type : ℕ ->  ℕ  -> ℕ -> SingleLinkedStack ℕ -> Set₁
+n-push-pop-type n cn ce st = M.exec (M.csComp {meta} (n-pop {meta} n) (n-push {meta} n)) meta ≡ meta
+  where
+    meta = id-meta cn ce st
+
+n-push-pop : (n cn ce : ℕ) -> (s : SingleLinkedStack ℕ) -> n-push-pop-type n cn ce s
+n-push-pop zero    cn ce s = refl
+n-push-pop (suc n) cn ce s = begin
+  M.exec (M.csComp (n-pop (suc n)) (n-push (suc n))) (id-meta cn ce s)
+  ≡⟨ refl ⟩
+  M.exec (M.csComp (M.csComp (n-pop n) (M.cs popOnce)) (n-push (suc n))) (id-meta cn ce s)
+  ≡⟨ cong (\f -> M.exec f (id-meta cn ce s)) (sym (M.comp-associative (n-push (suc n)) (M.cs popOnce) (n-pop n))) ⟩
+  M.exec (M.csComp (n-pop n) (M.csComp (M.cs popOnce) (n-push (suc n)))) (id-meta cn ce s)
+  ≡⟨ exec-comp (n-pop n) (M.csComp (M.cs popOnce) (n-push (suc n))) (id-meta cn ce s) ⟩
+  M.exec (n-pop n) (M.exec (M.csComp (M.cs popOnce) (n-push (suc n))) (id-meta cn ce s))
+  ≡⟨ cong (\x -> M.exec (n-pop n) x) (pop-n-push n cn ce s) ⟩
+  M.exec (n-pop n) (M.exec (n-push n) (id-meta cn ce s))
+  ≡⟨ sym (exec-comp (n-pop n) (n-push n) (id-meta cn ce s)) ⟩
+  M.exec (M.csComp (n-pop n) (n-push n)) (id-meta cn ce s)
+  ≡⟨ n-push-pop n cn ce s ⟩
+  id-meta cn ce s
+  ∎
+ 
+ {-
 n-push-pop-equiv : {c : Context} -> (n : ℕ )
                  -> M.exec (M.csComp {id-meta c} (n-pop {id-meta c} n) (n-push {id-meta c} n)) (id-meta c) ≡ (id-meta c)
 n-push-pop-equiv           zero  = refl
@@ -255,3 +293,5 @@ n-push-pop-equiv {c} (suc n) = begin
   ≡⟨ n-push-pop-equiv n ⟩
   id-meta c
   ∎
+
+-}
