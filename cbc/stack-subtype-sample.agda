@@ -191,25 +191,18 @@ n-push-pop-type n cn ce st = M.exec (M.csComp {meta} (n-pop {meta} n) (n-push {m
 n-push-pop : (n cn ce : ℕ) -> (s : SingleLinkedStack ℕ) -> n-push-pop-type n cn ce s
 n-push-pop zero    cn ce s = refl
 n-push-pop (suc n) cn ce s = begin
-  M.exec (M.csComp (n-pop (suc n)) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s)
+  M.exec (M.csComp {id-meta cn ce s} (n-pop {id-meta cn ce s}  (suc n)) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s)
   ≡⟨ refl ⟩
-  -- n-push {m} {{mm}} (suc n) = M.cs {{mm}} {{mm}} (\m -> M.exec {{mm}} {{mm}} (n-push {m} {{mm}} n) (pushOnce m))
-  M.exec (M.csComp (M.cs (\m -> M.exec (n-pop n) (popOnce m))) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s)
-  ≡⟨ exec-comp (M.cs (\m -> M.exec (n-pop n) (popOnce m))) (n-push (suc n))  (id-meta cn ce s) ⟩
-  M.exec (M.cs (\m -> M.exec (n-pop n) (popOnce m))) (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s))
+  M.exec (M.csComp  {id-meta cn ce s}  (M.cs (\m -> M.exec (n-pop {id-meta cn ce s} n) (popOnce m))) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s)
+  ≡⟨ exec-comp (M.cs (\m -> M.exec (n-pop n) (popOnce m))) (n-push {id-meta cn ce s}  (suc n))  (id-meta cn ce s) ⟩
+  M.exec (M.cs (\m -> M.exec (n-pop  {id-meta cn ce s}  n) (popOnce m))) (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s))
   ≡⟨ refl ⟩
   M.exec (n-pop n) (popOnce (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s)))
   ≡⟨ refl ⟩
   M.exec (n-pop n) (M.exec (M.cs popOnce) (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s)))
-  ≡⟨ sym (exec-comp (n-pop n) (M.cs popOnce) (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s))) ⟩
-  M.exec (M.csComp (n-pop n) (M.cs popOnce)) (M.exec (n-push {id-meta cn ce s} (suc n)) (id-meta cn ce s))
-  ≡⟨ sym (exec-comp ? ? ?) ⟩
-  M.exec (M.csComp (M.csComp (n-pop n) (M.cs popOnce)) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s)
-  ≡⟨ cong (\f -> M.exec f (id-meta cn ce s)) (sym (M.comp-associative (n-push {id-meta cn ce s} (suc n)) (M.cs popOnce) (n-pop n))) ⟩
-  M.exec (M.csComp (n-pop n) (M.csComp {id-meta cn ce s} (M.cs popOnce) (n-push {id-meta cn ce s} (suc n)))) (id-meta cn ce s)
-  ≡⟨ exec-comp (n-pop n) (M.csComp {id-meta cn ce s} (M.cs popOnce) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s) ⟩
+  ≡⟨ cong (\x -> M.exec (n-pop  {id-meta cn ce s}  n) x) (sym (exec-comp (M.cs popOnce) (n-push {id-meta cn ce s}  (suc n)) (id-meta cn ce s))) ⟩
   M.exec (n-pop n) (M.exec (M.csComp {id-meta cn ce s} (M.cs popOnce) (n-push {id-meta cn ce s} (suc n))) (id-meta cn ce s))
-  ≡⟨ cong (\x -> M.exec (n-pop n) x) (pop-n-push n cn ce s) ⟩
+  ≡⟨ cong (\x -> M.exec (n-pop {id-meta cn ce s}  n) x) (pop-n-push n cn ce s) ⟩
   M.exec (n-pop n) (M.exec (n-push n) (id-meta cn ce s))
   ≡⟨ sym (exec-comp (n-pop n) (n-push n) (id-meta cn ce s)) ⟩
   M.exec (M.csComp (n-pop n) (n-push n)) (id-meta cn ce s)
