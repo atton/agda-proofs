@@ -13,8 +13,7 @@ open DataSegment
 data CodeSegment {l1 l2 : Level} (A : Set l1) (B : Set l2) : Set (l ⊔ l1 ⊔ l2) where
   cs : {{_ : DataSegment A}} {{_ : DataSegment B}} -> (A -> B) -> CodeSegment A B
 
-goto : {l1 l2 : Level} {I : Set l1} {O : Set l2} {{_ : DataSegment I}} {{_ : DataSegment O}}
-     -> CodeSegment I O -> I -> O
+goto : {l1 l2 : Level} {I : Set l1} {O : Set l2} -> CodeSegment I O -> I -> O
 goto (cs b) i = b i
 
 exec : {l1 l2 : Level} {I : Set l1} {O : Set l2} {{_ : DataSegment I}} {{_ : DataSegment O}}
