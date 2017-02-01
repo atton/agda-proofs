@@ -33,14 +33,14 @@ instance
   _ = record { set = (\c d -> record c {c = (ds1.c d)})
              ; get = (\c ->   record { c = (Context.c c)})}
 
-cs2 : {{_ : DataSegment ds1}} -> CodeSegment ds1 ds1
-cs2 {{d}} = cs {{d}}{{d}} id
+cs2 : CodeSegment ds1 ds1
+cs2 = cs id
 
 cs1 : CodeSegment ds1 ds1
 cs1 = cs (\d -> goto cs2 d)
 
-cs0 : {{_ : DataSegment ds0}} {{_ : DataSegment ds1}} -> CodeSegment ds0 ds1
-cs0 {{d0}}{{d1}} = cs {{d0}}{{d1}} (\d -> goto {{d1}} {{d1}} cs1 (record {c = (ds0.a d) + (ds0.b d)}))
+cs0 : CodeSegment ds0 ds1
+cs0 = cs (\d -> goto cs1 (record {c = (ds0.a d) + (ds0.b d)}))
 
 main : ds1
 main = goto cs0 (record {a = 100 ; b = 50})
