@@ -74,3 +74,4 @@ cs0 = N.cs (\d -> N.goto cs1 (record {c = (ds0.a d) + (ds0.b d)}))
 
 main : Meta
 main = gotoMeta push cs0 (record {context = (record {a = 100 ; b = 50 ; c = 70}) ; c' = 0 ; next = (N.cs id)})
+-- record {context = record {a = 100 ; b = 50 ; c = 150} ; c' = 70 ; next = (N.cs id)}
